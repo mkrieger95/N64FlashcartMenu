@@ -171,6 +171,84 @@ static int compare_entry (const void *pa, const void *pb) {
     return strcasecmp((const char *) (a->name), (const char *) (b->name));
 }
 
+static unsigned char browser_entry_initial (const entry_t *entry) {
+    if (!entry->name || entry->name[0] == '\0') {
+        return '\0';
+    }
+
+    unsigned char initial = (unsigned char)entry->name[0];
+    if (initial >= 'a' && initial <= 'z') {
+        initial -= ('a' - 'A');
+    }
+
+    return initial;
+}
+
+static bool browser_jump_by_initial (menu_t *menu, bool forward) {
+    if (!menu->browser.entry || menu->browser.entry->type == ENTRY_TYPE_DIR) {
+        return false;
+    }
+
+    int32_t selected = menu->browser.selected;
+    entry_type_t type = menu->browser.entry->type;
+    int32_t group_start = selected;
+    int32_t group_end = selected;
+
+    while (group_start > 0 && menu->browser.list[group_start - 1].type == type) {
+        group_start--;
+    }
+    while (group_end + 1 < menu->browser.entries && menu->browser.list[group_end + 1].type == type) {
+        group_end++;
+    }
+
+    unsigned char current_initial = browser_entry_initial(menu->browser.entry);
+    int32_t target = -1;
+
+    if (forward) {
+        for (int32_t i = selected + 1; i <= group_end; i++) {
+            if (browser_entry_initial(&menu->browser.list[i]) != current_initial) {
+                target = i;
+                break;
+            }
+        }
+
+        if (target < 0 && menu->settings.wrap_file_list_scrolling &&
+            browser_entry_initial(&menu->browser.list[group_start]) != current_initial) {
+            target = group_start;
+        }
+    } else {
+        int32_t i = selected - 1;
+        while (i >= group_start && browser_entry_initial(&menu->browser.list[i]) == current_initial) {
+            i--;
+        }
+
+        if (i >= group_start) {
+            unsigned char previous_initial = browser_entry_initial(&menu->browser.list[i]);
+            while (i > group_start &&
+                   browser_entry_initial(&menu->browser.list[i - 1]) == previous_initial) {
+                i--;
+            }
+            target = i;
+        } else if (menu->settings.wrap_file_list_scrolling &&
+                   browser_entry_initial(&menu->browser.list[group_end]) != current_initial) {
+            i = group_end;
+            unsigned char previous_initial = browser_entry_initial(&menu->browser.list[i]);
+            while (i > group_start &&
+                   browser_entry_initial(&menu->browser.list[i - 1]) == previous_initial) {
+                i--;
+            }
+            target = i;
+        }
+    }
+
+    if (target < 0 || target == selected) {
+        return false;
+    }
+
+    menu->browser.selected = target;
+    return true;
+}
+
 static void browser_list_free (menu_t *menu) {
     if (menu->browser.archive) {
         mz_zip_reader_end(&menu->browser.zip);
@@ -568,32 +646,46 @@ static void process (menu_t *menu) {
     }
 
     int scroll_speed = menu->actions.go_fast ? 10 : 1;
+    bool alphabetical_fast_scroll = menu->actions.go_fast &&
+        menu->settings.fast_scroll_mode == FAST_SCROLL_MODE_ALPHABETICAL;
 
     if (menu->browser.entries > 1) {
         if (menu->actions.go_up) {
-            menu->browser.selected -= scroll_speed;
-            if (menu->settings.wrap_file_list_scrolling) {
-                // Wrap around to end if we go past the beginning
-                menu->browser.selected = (menu->browser.selected % menu->browser.entries + menu->browser.entries) % menu->browser.entries;
-            } else {
-                // Clamp to beginning
-                if (menu->browser.selected < 0) {
-                    menu->browser.selected = 0;
+            if (alphabetical_fast_scroll) {
+                if (browser_jump_by_initial(menu, false)) {
+                    sound_play_effect(SFX_CURSOR);
                 }
+            } else {
+                menu->browser.selected -= scroll_speed;
+                if (menu->settings.wrap_file_list_scrolling) {
+                    // Wrap around to end if we go past the beginning
+                    menu->browser.selected = (menu->browser.selected % menu->browser.entries + menu->browser.entries) % menu->browser.entries;
+                } else {
+                    // Clamp to beginning
+                    if (menu->browser.selected < 0) {
+                        menu->browser.selected = 0;
+                    }
+                }
+                sound_play_effect(SFX_CURSOR);
             }
-            sound_play_effect(SFX_CURSOR);
         } else if (menu->actions.go_down) {
-            menu->browser.selected += scroll_speed;
-            if (menu->settings.wrap_file_list_scrolling) {
-                // Wrap around to beginning if we go past the end
-                menu->browser.selected = menu->browser.selected % menu->browser.entries;
-            } else {
-                // Clamp to end
-                if (menu->browser.selected >= menu->browser.entries) {
-                    menu->browser.selected = menu->browser.entries - 1;
+            if (alphabetical_fast_scroll) {
+                if (browser_jump_by_initial(menu, true)) {
+                    sound_play_effect(SFX_CURSOR);
                 }
+            } else {
+                menu->browser.selected += scroll_speed;
+                if (menu->settings.wrap_file_list_scrolling) {
+                    // Wrap around to beginning if we go past the end
+                    menu->browser.selected = menu->browser.selected % menu->browser.entries;
+                } else {
+                    // Clamp to end
+                    if (menu->browser.selected >= menu->browser.entries) {
+                        menu->browser.selected = menu->browser.entries - 1;
+                    }
+                }
+                sound_play_effect(SFX_CURSOR);
             }
-            sound_play_effect(SFX_CURSOR);
         }
         menu->browser.entry = &menu->browser.list[menu->browser.selected];
     }

@@ -34,6 +34,7 @@ static settings_t init = {
     .show_browser_file_extensions = true,
     .show_browser_rom_tags = true,
     .wrap_file_list_scrolling = false,
+    .fast_scroll_mode = FAST_SCROLL_MODE_STANDARD,
     .rumble_enabled = false,
 };
 
@@ -81,6 +82,17 @@ void settings_load (settings_t *settings) {
     settings->show_browser_file_extensions = ini_get_bool(ini, "menu", "show_browser_file_extensions", init.show_browser_file_extensions);
     settings->show_browser_rom_tags = ini_get_bool(ini, "menu", "show_browser_rom_tags", init.show_browser_rom_tags);
     settings->wrap_file_list_scrolling = ini_get_bool(ini, "menu", "wrap_file_list_scrolling", init.wrap_file_list_scrolling);
+
+    int fast_scroll_mode = ini_get_int(ini, "menu", "fast_scroll_mode", init.fast_scroll_mode);
+    switch (fast_scroll_mode) {
+        case FAST_SCROLL_MODE_STANDARD:
+        case FAST_SCROLL_MODE_ALPHABETICAL:
+            settings->fast_scroll_mode = (fast_scroll_mode_t)fast_scroll_mode;
+            break;
+        default:
+            settings->fast_scroll_mode = init.fast_scroll_mode;
+            break;
+    }
     settings->rumble_enabled = ini_get_bool(ini, "menu_beta_flag", "rumble_enabled", init.rumble_enabled);
 
     ini_free(ini);
@@ -115,6 +127,7 @@ void settings_save (settings_t *settings) {
     // ini_set_bool(ini, "menu", "show_browser_file_extensions", settings->show_browser_file_extensions);
     // ini_set_bool(ini, "menu", "show_browser_rom_tags", settings->show_browser_rom_tags);
     ini_set_bool(ini, "menu", "wrap_file_list_scrolling", settings->wrap_file_list_scrolling);
+    ini_set_int(ini, "menu", "fast_scroll_mode", settings->fast_scroll_mode);
     // ini_set_bool(ini, "menu_beta_flag", "rumble_enabled", settings->rumble_enabled);
 
     if (!ini_save(ini, settings_path)) {

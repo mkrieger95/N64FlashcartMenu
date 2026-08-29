@@ -12,6 +12,14 @@ static const char *format_switch (bool state) {
     }
 }
 
+static const char *format_fast_scroll_mode (fast_scroll_mode_t mode) {
+    switch (mode) {
+        case FAST_SCROLL_MODE_ALPHABETICAL: return "Alphabetically";
+        case FAST_SCROLL_MODE_STANDARD:
+        default: return "Standard";
+    }
+}
+
 #ifdef FEATURE_AUTOLOAD_ROM_ENABLED
 static void set_loading_progress_bar_enabled_type (menu_t *menu, void *arg) {
     menu->settings.loading_progress_bar_enabled = (bool)(uintptr_t)(arg);
@@ -51,7 +59,7 @@ static void set_show_cheat_files_type (menu_t *menu, void *arg) {
 
     menu->browser.reload = true;
 }
-    
+
 static void set_soundfx_enabled_type (menu_t *menu, void *arg) {
     menu->settings.soundfx_enabled = (bool)(uintptr_t)(arg);
     sound_use_sfx(menu->settings.soundfx_enabled);
@@ -76,25 +84,30 @@ static void set_pal60_type (menu_t *menu, void *arg) {
 
         // FIXME: timeout and restore to PAL 50Hz if message not shown, 
         //vi_set_timing_preset(&VI_TIMING_PAL);
-        
+
     }
     else if (!pal60_try_enable && (tv_type == TV_PAL)){
         //disable it without needing to reboot the console.
         // Set VI timing so it will use 50Hz signal.
         vi_set_timing_preset(&VI_TIMING_PAL);
-        
+
     }
     else {
         //not PAL, cannot enable PAL60
         pal60_try_enable = false;
     }
-    
+
     menu->settings.pal60_enabled = pal60_try_enable;
     settings_save(&menu->settings);
 }
 
 static void set_wrap_file_list_scrolling_type (menu_t *menu, void *arg) {
     menu->settings.wrap_file_list_scrolling = (bool)(uintptr_t)(arg);
+    settings_save(&menu->settings);
+}
+
+static void set_fast_scroll_mode (menu_t *menu, void *arg) {
+    menu->settings.fast_scroll_mode = (fast_scroll_mode_t)(uintptr_t)(arg);
     settings_save(&menu->settings);
 }
 
@@ -256,6 +269,18 @@ static component_context_menu_t set_wrap_file_list_scrolling_context_menu = {
     COMPONENT_CONTEXT_MENU_LIST_END,
 }};
 
+static int get_fast_scroll_mode_current_selection (menu_t *menu) {
+    return menu->settings.fast_scroll_mode == FAST_SCROLL_MODE_ALPHABETICAL ? 1 : 0;
+}
+
+static component_context_menu_t set_fast_scroll_mode_context_menu = {
+    .get_default_selection = get_fast_scroll_mode_current_selection,
+    .list = {
+        {.text = "Standard", .action = set_fast_scroll_mode, .arg = (void *)(uintptr_t)(FAST_SCROLL_MODE_STANDARD) },
+        {.text = "Alphabetically", .action = set_fast_scroll_mode, .arg = (void *)(uintptr_t)(FAST_SCROLL_MODE_ALPHABETICAL) },
+    COMPONENT_CONTEXT_MENU_LIST_END,
+}};
+
 #ifndef FEATURE_AUTOLOAD_ROM_ENABLED
 static int get_use_rom_fast_reboot_current_selection (menu_t *menu) {
     return menu->settings.rom_fast_reboot_enabled ? 0 : 1;
@@ -318,6 +343,7 @@ static component_context_menu_t options_context_menu = { .list = {
     { .text = "Show Cheat Files", .submenu = &set_show_cheat_files_type_context_menu },
     { .text = "PAL60 Mode", .submenu = &set_pal60_type_context_menu },
     { .text = "Wrap File List", .submenu = &set_wrap_file_list_scrolling_context_menu },
+    { .text = "Fast Scroll Mode", .submenu = &set_fast_scroll_mode_context_menu },
     #ifdef FEATURE_AUTOLOAD_ROM_ENABLED
     { .text = "ROM Loading Bar", .submenu = &set_loading_progress_bar_enabled_context_menu },
 #else
@@ -390,6 +416,7 @@ static void draw (menu_t *menu, surface_t *d) {
         "     Show Cheat files  : %s\n"
         "*    PAL60 Mode        : %s\n"
         "     Wrap File List    : %s\n"
+        "     Fast Scroll Mode   : %s\n"
 #ifdef FEATURE_AUTOLOAD_ROM_ENABLED
         "     Autoload ROM      : %s\n\n"
         "     ROM Loading Bar   : %s\n"
@@ -414,6 +441,7 @@ static void draw (menu_t *menu, surface_t *d) {
         format_switch(menu->settings.show_cheat_files),
         format_switch(menu->settings.pal60_enabled),
         format_switch(menu->settings.wrap_file_list_scrolling),
+        format_fast_scroll_mode(menu->settings.fast_scroll_mode),
 #ifdef FEATURE_AUTOLOAD_ROM_ENABLED
         format_switch(menu->settings.rom_autoload_enabled),
         format_switch(menu->settings.loading_progress_bar_enabled)
@@ -462,6 +490,6 @@ void view_settings_init (menu_t *menu) {
 
 void view_settings_display (menu_t *menu, surface_t *display) {
     process(menu);
-    
+
     draw(menu, display);
 }

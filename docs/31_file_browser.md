@@ -19,7 +19,7 @@ The File Browser allows you to navigate and manage files on your N64 flashcart. 
 <!-- Maybe all the Control pages could be merged into this section? -->
 
 1. **Navigating Files**:
-   - Use the directional `Up` and `Down` buttons (`C-Up` and `C-Down` for fast scrolling) to move through the list of files and directories.
+   - Use the directional `Up` and `Down` buttons to move through the list of files and directories. `C-Up` and `C-Down` use the configured Fast Scroll Mode.
    - Press the `A` Button to open a directory or load a supported file.
 
 2. **Performing File Operations**:

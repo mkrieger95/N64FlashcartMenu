@@ -8,6 +8,13 @@
 #define SETTINGS_H__
 
 
+/** @brief Fast scroll mode enumeration */
+typedef enum {
+    FAST_SCROLL_MODE_STANDARD,
+    FAST_SCROLL_MODE_ALPHABETICAL,
+} fast_scroll_mode_t;
+
+
 /** @brief Settings Structure */
 typedef struct {
     /** @brief Settings version */
@@ -46,11 +53,14 @@ typedef struct {
     /** @brief Show rom file extensions in browser */    
     bool show_browser_file_extensions;
 
-    /** @brief Show rom tags in browser */  
+    /** @brief Show rom tags in browser */ 
     bool show_browser_rom_tags;
 
     /** @brief Wrap file list scrolling (infinite/circular navigation) */
     bool wrap_file_list_scrolling;
+
+    /** @brief Fast scrolling behavior in the file browser */
+    fast_scroll_mode_t fast_scroll_mode;
 
     /** @brief Enable Background music */
     bool bgm_enabled;
@@ -70,7 +80,7 @@ typedef struct {
 
     /** @brief A filename of the autoloaded ROM */
     char *rom_autoload_filename;
-    
+
     /** @brief Show progress bar when loading a ROM */
     bool loading_progress_bar_enabled;
 #else

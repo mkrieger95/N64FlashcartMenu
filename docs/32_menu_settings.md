@@ -56,6 +56,15 @@ OFF: ROM saves are saved alongside the ROM file.
 
 The menu has default sound effects to improve the user experience. See the [sound documentation](./40_sound.md) for details. This setting is OFF by default.
 
+### Fast Scroll Mode
+
+Controls the behavior of `C-Up` and `C-Down` in the File Browser.
+
+- **Standard** (default): skips 10 entries at a time.
+- **Alphabetically**: jumps to the first entry with the next or previous initial character within the selected file type. Directories are not affected.
+
+When Wrap File List is enabled, Alphabetically mode wraps within the selected file type.
+
 ### Fast ROM reboots
 
 Certain flashcarts support the ability to use the N64 `RESET` button for re-loading the last game, rather than returning to the menu. When enabled (and if supported by your flashcart), the power switch must be toggled to return to the menu.
